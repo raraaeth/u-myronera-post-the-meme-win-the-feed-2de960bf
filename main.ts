@@ -52,7 +52,16 @@ function readPostUrl(): string {
 }
 
 // Validate first, so a bad POST.json fails loudly instead of reaching the
-// gate; then hand the file over unchanged.
+// gate; then hand the file over unchanged, and read the copy back to prove
+// the bytes that landed in the output directory are exactly the source's.
 readPostUrl();
 mkdirSync(OUTPUT_DIR, { recursive: true });
-copyFileSync(join(REPO_ROOT, "POST.json"), join(OUTPUT_DIR, "POST.json"));
+const sourceBytes = readFileSync(join(REPO_ROOT, "POST.json"));
+const destPath = join(OUTPUT_DIR, "POST.json");
+copyFileSync(join(REPO_ROOT, "POST.json"), destPath);
+const copiedBytes = readFileSync(destPath);
+if (!copiedBytes.equals(sourceBytes)) {
+  throw new Error(
+    `Copied POST.json at ${destPath} does not match the source bytes (${copiedBytes.length} vs ${sourceBytes.length} bytes).`,
+  );
+}
